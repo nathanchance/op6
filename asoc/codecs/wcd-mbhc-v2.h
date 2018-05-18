@@ -18,6 +18,9 @@
 #include "wcdcal-hwdep.h"
 #include <sound/jack.h>
 
+
+#include <linux/extcon.h>
+
 #define TOMBAK_MBHC_NC	0
 #define TOMBAK_MBHC_NO	1
 #define WCD_MBHC_DEF_BUTTONS 8
@@ -154,6 +157,14 @@ do {                                                    \
 #define ANC_DETECT_RETRY_CNT 7
 #define WCD_MBHC_SPL_HS_CNT  1
 
+
+enum extcon_plug_type {
+	EXTCON_PLUG_TYPE_NONE = 19,             //19  no headset insert
+	EXTCON_PLUG_TYPE_HEADSET = 20,          //20
+	EXTCON_PLUG_TYPE_HEADPHONE,             //21
+	EXTCON_PLUG_TYPE_GND_MIC_SWAP,          //22
+};
+
 enum wcd_mbhc_detect_logic {
 	WCD_DETECTION_LEGACY,
 	WCD_DETECTION_ADC,
@@ -189,6 +200,9 @@ enum wcd_mbhc_register_function {
 	WCD_MBHC_BTN_DBNC,
 	WCD_MBHC_HS_VREF,
 	WCD_MBHC_HS_COMP_RESULT,
+	/* qcom patch */
+	WCD_MBHC_IN2P_CLAMP_STATE,
+	/* patch end */
 	WCD_MBHC_MIC_SCHMT_RESULT,
 	WCD_MBHC_HPHL_SCHMT_RESULT,
 	WCD_MBHC_HPHR_SCHMT_RESULT,
@@ -513,6 +527,7 @@ struct wcd_mbhc {
 	struct wcd_mbhc_config *mbhc_cfg;
 	const struct wcd_mbhc_cb *mbhc_cb;
 
+	struct extcon_dev *wcd934x_edev;
 	u32 hph_status; /* track headhpone status */
 	u8 hphlocp_cnt; /* headphone left ocp retry */
 	u8 hphrocp_cnt; /* headphone right ocp retry */
