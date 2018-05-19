@@ -344,7 +344,6 @@ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 	 * the is alarm set for the next second and the second ticks
 	 * over right here, before we set the alarm.
 	 */
-
 	if (!rtc->ops)
 		err = -ENODEV;
 	else if (!rtc->ops->set_alarm)
