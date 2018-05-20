@@ -30,7 +30,11 @@ static __always_inline void boot_init_stack_canary(void)
 	/* Try to get a semi random initial value. */
 	get_random_bytes(&canary, sizeof(canary));
 	canary ^= LINUX_VERSION_CODE;
-	canary &= CANARY_MASK;
+#ifdef __LITTLE_ENDIAN
+	canary &= 0xffffffffffffff00UL;
+#else
+	canary &= 0x00ffffffffffffffUL;
+#endif
 
 	current->stack_canary = canary;
 	__stack_chk_guard = current->stack_canary;
