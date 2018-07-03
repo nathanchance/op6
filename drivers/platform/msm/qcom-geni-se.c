@@ -892,8 +892,9 @@ int geni_se_clk_tbl_get(struct se_geni_rsc *rsc, unsigned long **tbl)
 		return geni_se_dev->num_clk_levels;
 	}
 
-	geni_se_dev->clk_perf_tbl = kzalloc(sizeof(*geni_se_dev->clk_perf_tbl) *
-						MAX_CLK_PERF_LEVEL, GFP_KERNEL);
+	geni_se_dev->clk_perf_tbl = kcalloc(MAX_CLK_PERF_LEVEL,
+					    sizeof(*geni_se_dev->clk_perf_tbl),
+					    GFP_KERNEL);
 	if (!geni_se_dev->clk_perf_tbl)
 		return -ENOMEM;
 
