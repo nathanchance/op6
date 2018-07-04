@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -88,6 +88,7 @@ enum vidc_status {
 	VIDC_ERR_TIMEOUT,
 	VIDC_ERR_CMDQFULL,
 	VIDC_ERR_START_CODE_NOT_FOUND,
+	VIDC_ERR_NOC_ERROR,
 	VIDC_ERR_CLIENT_PRESENT = 0x90000001,
 	VIDC_ERR_CLIENT_FATAL,
 	VIDC_ERR_CMD_QUEUE_FULL,
@@ -110,7 +111,8 @@ enum hal_extradata_id {
 	HAL_EXTRADATA_ASPECT_RATIO,
 	HAL_EXTRADATA_MPEG2_SEQDISP,
 	HAL_EXTRADATA_STREAM_USERDATA,
-	HAL_EXTRADATA_FRAME_QP,
+	HAL_EXTRADATA_DEC_FRAME_QP,
+	HAL_EXTRADATA_ENC_FRAME_QP,
 	HAL_EXTRADATA_FRAME_BITS_INFO,
 	HAL_EXTRADATA_INPUT_CROP,
 	HAL_EXTRADATA_DIGITAL_ZOOM,
