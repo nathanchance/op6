@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -371,11 +371,9 @@ int ipa3_active_clients_log_print_table(char *buf, int size)
 static int ipa3_active_clients_panic_notifier(struct notifier_block *this,
 		unsigned long event, void *ptr)
 {
-	mutex_lock(&ipa3_ctx->ipa3_active_clients.mutex);
 	ipa3_active_clients_log_print_table(active_clients_table_buf,
 			IPA3_ACTIVE_CLIENTS_TABLE_BUF_SIZE);
 	IPAERR("%s", active_clients_table_buf);
-	mutex_unlock(&ipa3_ctx->ipa3_active_clients.mutex);
 
 	return NOTIFY_DONE;
 }
@@ -4394,7 +4392,7 @@ static int ipa3_post_init(const struct ipa3_plat_drv_res *resource_p,
 	/* Prevent consequent calls from trying to load the FW again. */
 	if (ipa3_ctx->ipa_initialization_complete)
 		return 0;
-	/* CR#2077370 move proxy vote for modem on ipa3_post_init */
+	/* move proxy vote for modem on ipa3_post_init */
 	IPA_ACTIVE_CLIENTS_INC_SPECIAL("PROXY_CLK_VOTE");
 
 	/*
@@ -5050,6 +5048,7 @@ static int ipa3_pre_init(const struct ipa3_plat_drv_res *resource_p,
 	}
 
 	mutex_init(&ipa3_ctx->ipa3_active_clients.mutex);
+	/* move proxy vote for modem to ipa3_post_init() */
 	atomic_set(&ipa3_ctx->ipa3_active_clients.cnt, 1);
 
 	/* Create workqueues for power management */
