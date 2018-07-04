@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -434,7 +434,7 @@ int cam_irq_controller_disable_irq(void *irq_controller, uint32_t handle)
 		irq_mask = cam_io_r_mb(controller->mem_base +
 			controller->irq_register_arr[i].
 			mask_reg_offset);
-		CAM_INFO(CAM_ISP, "irq_mask 0x%x before disable 0x%x",
+		CAM_DBG(CAM_ISP, "irq_mask 0x%x before disable 0x%x",
 			controller->irq_register_arr[i].mask_reg_offset,
 			irq_mask);
 		irq_mask &= ~(evt_handler->evt_bit_mask_arr[i]);
@@ -442,7 +442,7 @@ int cam_irq_controller_disable_irq(void *irq_controller, uint32_t handle)
 		cam_io_w_mb(irq_mask, controller->mem_base +
 			controller->irq_register_arr[i].
 			mask_reg_offset);
-		CAM_INFO(CAM_ISP, "irq_mask 0x%x after disable 0x%x",
+		CAM_DBG(CAM_ISP, "irq_mask 0x%x after disable 0x%x",
 			controller->irq_register_arr[i].mask_reg_offset,
 			irq_mask);
 
