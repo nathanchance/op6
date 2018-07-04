@@ -232,13 +232,13 @@ void *dsi_register_clk_handle(void *clk_mngr, char *client);
 int dsi_deregister_clk_handle(void *client);
 
 /**
- * dsi_display_link_clk_force_reenable_ctrl() - force to set link clks
+ * dsi_display_link_clk_force_update_ctrl() - force to set link clks
  * @handle:     Handle of desired DSI clock client.
  *
  * return: error code in case of failure or 0 for success.
  */
 
-int dsi_display_link_clk_force_reenable_ctrl(void *handle);
+int dsi_display_link_clk_force_update_ctrl(void *handle);
 
 /**
  * dsi_display_clk_ctrl() - set frequencies for link clks

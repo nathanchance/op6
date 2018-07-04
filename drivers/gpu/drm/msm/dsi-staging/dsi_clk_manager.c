@@ -1071,7 +1071,7 @@ int dsi_clk_req_state(void *client, enum dsi_clk_type clk,
 
 DEFINE_MUTEX(dsi_mngr_clk_mutex);
 
-static int dsi_display_link_clk_force_reenable(void *client)
+static int dsi_display_link_clk_force_update(void *client)
 {
 	int rc = 0;
 	struct dsi_clk_client_info *c = client;
@@ -1121,7 +1121,7 @@ error:
 
 }
 
-int dsi_display_link_clk_force_reenable_ctrl(void *handle)
+int dsi_display_link_clk_force_update_ctrl(void *handle)
 {
 	int rc = 0;
 
@@ -1132,9 +1132,7 @@ int dsi_display_link_clk_force_reenable_ctrl(void *handle)
 
 	mutex_lock(&dsi_mngr_clk_mutex);
 
-	rc = dsi_display_link_clk_force_reenable(handle);
-	if (rc && (rc != -EAGAIN))
-		pr_err("%s: failed set clk state, rc = %d\n", __func__, rc);
+	rc = dsi_display_link_clk_force_update(handle);
 
 	mutex_unlock(&dsi_mngr_clk_mutex);
 
