@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -38,6 +38,9 @@ static enum vidc_status hfi_map_err_status(u32 hfi_err)
 		break;
 	case HFI_ERR_SYS_FATAL:
 		vidc_err = VIDC_ERR_HW_FATAL;
+		break;
+	case HFI_ERR_SYS_NOC_ERROR:
+		vidc_err = VIDC_ERR_NOC_ERROR;
 		break;
 	case HFI_ERR_SYS_VERSION_MISMATCH:
 	case HFI_ERR_SYS_INVALID_PARAMETER:
@@ -316,11 +319,14 @@ static int hfi_process_evt_release_buffer_ref(u32 device_id,
 	return 0;
 }
 
-static int hfi_process_sys_error(u32 device_id, struct msm_vidc_cb_info *info)
+static int hfi_process_sys_error(u32 device_id,
+	struct hfi_msg_event_notify_packet *pkt,
+	struct msm_vidc_cb_info *info)
 {
 	struct msm_vidc_cb_cmd_done cmd_done = {0};
 
 	cmd_done.device_id = device_id;
+	cmd_done.status = hfi_map_err_status(pkt->event_data1);
 
 	info->response_type = HAL_SYS_ERROR;
 	info->response.cmd = cmd_done;
@@ -373,7 +379,7 @@ static int hfi_process_event_notify(u32 device_id,
 	case HFI_EVENT_SYS_ERROR:
 		dprintk(VIDC_ERR, "HFI_EVENT_SYS_ERROR: %d, %#x\n",
 			pkt->event_data1, pkt->event_data2);
-		return hfi_process_sys_error(device_id, info);
+		return hfi_process_sys_error(device_id, pkt, info);
 	case HFI_EVENT_SESSION_ERROR:
 		dprintk(VIDC_INFO, "HFI_EVENT_SESSION_ERROR[%#x]\n",
 				pkt->session_id);
@@ -850,6 +856,36 @@ static int copy_caps_to_sessions(struct hfi_capability_supported *cap,
 	return 0;
 }
 
+static int copy_nal_stream_format_caps_to_sessions(u32 nal_stream_format_value,
+		struct msm_vidc_capability *capabilities, u32 num_sessions,
+		u32 codecs, u32 domain) {
+	u32 i = 0;
+	struct msm_vidc_capability *capability;
+	u32 sess_codec;
+	u32 sess_domain;
+
+	for (i = 0; i < num_sessions; i++) {
+		sess_codec = 0;
+		sess_domain = 0;
+		capability = &capabilities[i];
+
+		if (capability->codec)
+			sess_codec =
+				vidc_get_hfi_codec(capability->codec);
+		if (capability->domain)
+			sess_domain =
+				vidc_get_hfi_domain(capability->domain);
+
+		if (!(sess_codec & codecs && sess_domain & domain))
+			continue;
+
+		capability->nal_stream_format.nal_stream_format_supported =
+				nal_stream_format_value;
+	}
+
+	return 0;
+}
+
 static enum vidc_status hfi_parse_init_done_properties(
 		struct msm_vidc_capability *capabilities,
 		u32 num_sessions, u8 *data_ptr, u32 num_properties,
@@ -978,6 +1014,15 @@ static enum vidc_status hfi_parse_init_done_properties(
 		}
 		case HFI_PROPERTY_PARAM_NAL_STREAM_FORMAT_SUPPORTED:
 		{
+			struct hfi_nal_stream_format_supported *prop =
+				(struct hfi_nal_stream_format_supported *)
+					(data_ptr + next_offset);
+
+			copy_nal_stream_format_caps_to_sessions(
+					prop->nal_stream_format_supported,
+					capabilities, num_sessions,
+					codecs, domain);
+
 			next_offset +=
 				sizeof(struct hfi_nal_stream_format_supported);
 			num_properties--;

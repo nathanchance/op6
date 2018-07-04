@@ -703,7 +703,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
 			struct cpumask *mask;
 
 			if (!desc)
-				break;
+				return;
 
 			mask = desc->irq_data.common->affinity;
 
@@ -737,21 +737,21 @@ void pm_qos_add_request(struct pm_qos_request *req,
 	req->pm_qos_class = pm_qos_class;
 
 #ifdef CONFIG_SMP
-       if (req->type == PM_QOS_REQ_AFFINE_IRQ &&
-                       irq_can_set_affinity(req->irq)) {
-               int ret = 0;
+	if (req->type == PM_QOS_REQ_AFFINE_IRQ &&
+			irq_can_set_affinity(req->irq)) {
+		int ret = 0;
 
-               ret = irq_set_affinity_notifier(req->irq,
-                                       &req->irq_notify);
-               if (ret) {
-                       WARN(1, "IRQ affinity notify set failed\n");
-                       req->type = PM_QOS_REQ_ALL_CORES;
-                       cpumask_setall(&req->cpus_affine);
-                       pm_qos_update_target(
-                               pm_qos_array[pm_qos_class]->constraints,
-                               req, PM_QOS_UPDATE_REQ, value);
-               }
-       }
+		ret = irq_set_affinity_notifier(req->irq,
+					&req->irq_notify);
+		if (ret) {
+			WARN(1, "IRQ affinity notify set failed\n");
+			req->type = PM_QOS_REQ_ALL_CORES;
+			cpumask_setall(&req->cpus_affine);
+			pm_qos_update_target(
+				pm_qos_array[pm_qos_class]->constraints,
+				req, PM_QOS_UPDATE_REQ, value);
+		}
+	}
 #endif
 }
 EXPORT_SYMBOL_GPL(pm_qos_add_request);
