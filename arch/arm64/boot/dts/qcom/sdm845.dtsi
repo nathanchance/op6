@@ -776,6 +776,7 @@
 		      <0x17a60000 0x100000>;    /* GICR * 8 */
 		interrupts = <1 9 4>;
 		interrupt-parent = <&intc>;
+		ignored-save-restore-irqs = <38>;
 	};
 
 	pdc: interrupt-controller@b220000{
@@ -1922,6 +1923,11 @@
 		kaslr_offset@6d0 {
 			compatible = "qcom,msm-imem-kaslr_offset";
 			reg = <0x6d0 12>;
+		};
+
+		reduced_sdi_mode@6dc {
+			compatible = "qcom,msm-imem-reduced_sdi_mode";
+			reg = <0x6dc 4>;
 		};
 
 		diag_dload@c8 {

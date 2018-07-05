@@ -631,7 +631,6 @@ static void msm_geni_serial_abort_rx(struct uart_port *uport)
 static void msm_geni_serial_complete_rx_eot(struct uart_port *uport)
 {
 	int poll_done = 0, tries = 0;
-	u32 geni_status = 0;
 	struct msm_geni_serial_port *port = GET_DEV_PORT(uport);
 
 	do {
@@ -640,11 +639,11 @@ static void msm_geni_serial_complete_rx_eot(struct uart_port *uport)
 		tries++;
 	} while (!poll_done && tries < 5);
 
-	geni_status = geni_read_reg_nolog(uport->membase, SE_GENI_STATUS);
-
 	if (!poll_done)
-		IPC_LOG_MSG(port->ipc_log_misc, "%s: RX_EOT, GENI:0x%x\n",
-							__func__, geni_status);
+		IPC_LOG_MSG(port->ipc_log_misc,
+		"%s: RX_EOT, GENI:0x%x, DMA_DEBUG:0x%x\n", __func__,
+		geni_read_reg_nolog(uport->membase, SE_GENI_STATUS),
+		geni_read_reg_nolog(uport->membase, SE_DMA_DEBUG_REG0));
 	else
 		geni_write_reg_nolog(RX_EOT, uport->membase, SE_DMA_RX_IRQ_CLR);
 }
@@ -1145,7 +1144,9 @@ static void stop_rx_sequencer(struct uart_port *uport)
 	 * cancel control bit.
 	 */
 	mb();
-	msm_geni_serial_complete_rx_eot(uport);
+	if (!uart_console(uport))
+		msm_geni_serial_complete_rx_eot(uport);
+
 	done = msm_geni_serial_poll_bit(uport, SE_GENI_S_CMD_CTRL_REG,
 					S_GENI_CMD_CANCEL, false);
 	if (done) {
@@ -1674,7 +1675,7 @@ static int msm_geni_serial_port_setup(struct uart_port *uport)
 		msm_port->rx_buf = devm_kzalloc(uport->dev, DMA_RX_BUF_SIZE,
 								GFP_KERNEL);
 		if (!msm_port->rx_buf) {
-			kfree(msm_port->rx_fifo);
+			devm_kfree(uport->dev, msm_port->rx_fifo);
 			msm_port->rx_fifo = NULL;
 			ret = -ENOMEM;
 			goto exit_portsetup;
@@ -1870,6 +1871,7 @@ static void msm_geni_serial_set_termios(struct uart_port *uport,
 	unsigned long ser_clk_cfg = 0;
 	struct msm_geni_serial_port *port = GET_DEV_PORT(uport);
 	unsigned long clk_rate;
+	unsigned long flags;
 
 	if (!uart_console(uport)) {
 		int ret = msm_geni_serial_power_on(uport);
@@ -1881,7 +1883,13 @@ static void msm_geni_serial_set_termios(struct uart_port *uport,
 			return;
 		}
 	}
+	/* Take a spinlock else stop_rx causes a race with an ISR due to Cancel
+	 * and FSM_RESET. This also has a potential race with the dma_map/unmap
+	 * operations of ISR.
+	 */
+	spin_lock_irqsave(&uport->lock, flags);
 	msm_geni_serial_stop_rx(uport);
+	spin_unlock_irqrestore(&uport->lock, flags);
 	/* baud rate */
 	baud = uart_get_baud_rate(uport, termios, old, 300, 4000000);
 	port->cur_baud = baud;
