@@ -6959,6 +6959,18 @@ static inline long qseecom_ioctl(struct file *file,
 			pr_err("failed qseecom_register_listener: %d\n", ret);
 		break;
 	}
+	case QSEECOM_IOCTL_SET_ICE_INFO: {
+		struct qseecom_ice_data_t ice_data;
+
+		ret = copy_from_user(&ice_data, argp, sizeof(ice_data));
+		if (ret) {
+			pr_err("copy_from_user failed\n");
+			return -EFAULT;
+		}
+		qcom_ice_set_fde_flag(ice_data.flag);
+		break;
+	}
+
 	case QSEECOM_IOCTL_UNREGISTER_LISTENER_REQ: {
 		if ((data->listener.id == 0) ||
 			(data->type != QSEECOM_LISTENER_SERVICE)) {
