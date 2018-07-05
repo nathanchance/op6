@@ -32,8 +32,7 @@ static int32_t cam_flash_driver_cmd(struct cam_flash_ctrl *fctrl,
 	if (cmd->handle_type != CAM_HANDLE_USER_POINTER) {
 		CAM_ERR(CAM_FLASH, "Invalid handle type: %d",
 			cmd->handle_type);
-		rc = -EINVAL;
-		goto release_mutex;
+		return -EINVAL;
 	}
 
 	mutex_lock(&(fctrl->flash_mutex));

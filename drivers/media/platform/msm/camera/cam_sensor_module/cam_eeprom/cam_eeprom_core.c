@@ -859,12 +859,13 @@ int32_t cam_eeprom_driver_cmd(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 	struct cam_control            *cmd = (struct cam_control *)arg;
 
 	if (!e_ctrl || !cmd) {
-		CAM_ERR(CAM_EEPROM, "e_ctrl is NULL");
+		CAM_ERR(CAM_EEPROM, "Invalid Arguments");
 		return -EINVAL;
 	}
 
 	if (cmd->handle_type != CAM_HANDLE_USER_POINTER) {
-		CAM_ERR(CAM_EEPROM, "Invalid Handle Type");
+		CAM_ERR(CAM_EEPROM, "Invalid handle type: %d",
+			cmd->handle_type);
 		return -EINVAL;
 	}
 
