@@ -1295,6 +1295,22 @@ static int cam_icp_get_a5_dbg_type(void *data, u64 *val)
 DEFINE_SIMPLE_ATTRIBUTE(cam_icp_debug_type_fs, cam_icp_get_a5_dbg_type,
 	cam_icp_set_a5_dbg_type, "%08llu");
 
+static int cam_icp_set_a5_fw_dump_lvl(void *data, u64 val)
+{
+	if (val < NUM_HFI_DUMP_LVL)
+		icp_hw_mgr.a5_fw_dump_lvl = val;
+	return 0;
+}
+
+static int cam_icp_get_a5_fw_dump_lvl(void *data, u64 *val)
+{
+	*val = icp_hw_mgr.a5_fw_dump_lvl;
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(cam_icp_debug_fw_dump, cam_icp_get_a5_fw_dump_lvl,
+	cam_icp_set_a5_fw_dump_lvl, "%08llu");
+
 static int cam_icp_hw_mgr_create_debugfs_entry(void)
 {
 	int rc = 0;
@@ -1345,7 +1361,7 @@ static int cam_icp_hw_mgr_create_debugfs_entry(void)
 		0644,
 		icp_hw_mgr.dentry,
 		NULL, &cam_icp_debug_type_fs)) {
-		CAM_ERR(CAM_ICP, "failed to create a5_debug_type\n");
+		CAM_ERR(CAM_ICP, "failed to create a5_debug_type");
 		rc = -ENOMEM;
 		goto err;
 	}
@@ -1354,7 +1370,16 @@ static int cam_icp_hw_mgr_create_debugfs_entry(void)
 		0644,
 		icp_hw_mgr.dentry,
 		NULL, &cam_icp_debug_fs)) {
-		CAM_ERR(CAM_ICP, "failed to create a5_dbg_lvl\n");
+		CAM_ERR(CAM_ICP, "failed to create a5_dbg_lvl");
+		rc = -ENOMEM;
+		goto err;
+	}
+
+	if (!debugfs_create_file("a5_fw_dump_lvl",
+		0644,
+		icp_hw_mgr.dentry,
+		NULL, &cam_icp_debug_fw_dump)) {
+		CAM_ERR(CAM_ICP, "failed to create a5_fw_dump_lvl");
 		rc = -ENOMEM;
 		goto err;
 	}
@@ -2270,13 +2295,7 @@ static int cam_icp_mgr_abort_handle(
 	unsigned long rem_jiffies;
 	size_t packet_size;
 	int timeout = 100;
-	struct hfi_cmd_work_data *task_data;
 	struct hfi_cmd_ipebps_async *abort_cmd;
-	struct crm_workq_task *task;
-
-	task = cam_req_mgr_workq_get_task(icp_hw_mgr.cmd_work);
-	if (!task)
-		return -ENOMEM;
 
 	packet_size =
 		sizeof(struct hfi_cmd_ipebps_async) +
@@ -2302,13 +2321,7 @@ static int cam_icp_mgr_abort_handle(
 	abort_cmd->user_data1 = (uint64_t)ctx_data;
 	abort_cmd->user_data2 = (uint64_t)0x0;
 
-	task_data = (struct hfi_cmd_work_data *)task->payload;
-	task_data->data = (void *)abort_cmd;
-	task_data->request_id = 0;
-	task_data->type = ICP_WORKQ_TASK_CMD_TYPE;
-	task->process_cb = cam_icp_mgr_process_cmd;
-	rc = cam_req_mgr_workq_enqueue_task(task, &icp_hw_mgr,
-		CRM_TASK_PRIORITY_0);
+	rc = hfi_write_cmd(abort_cmd);
 	if (rc) {
 		kfree(abort_cmd);
 		return rc;
@@ -2321,12 +2334,8 @@ static int cam_icp_mgr_abort_handle(
 		rc = -ETIMEDOUT;
 		CAM_ERR(CAM_ICP, "FW timeout/err in abort handle command");
 	}
-	else{
-		//workq won't do free,if no timeout means
-		//cmd execution finished,so just release it.
-		kfree(abort_cmd);
-	}
 
+	kfree(abort_cmd);
 	return rc;
 }
 
@@ -2337,13 +2346,7 @@ static int cam_icp_mgr_destroy_handle(
 	int timeout = 100;
 	unsigned long rem_jiffies;
 	size_t packet_size;
-	struct hfi_cmd_work_data *task_data;
 	struct hfi_cmd_ipebps_async *destroy_cmd;
-	struct crm_workq_task *task;
-
-	task = cam_req_mgr_workq_get_task(icp_hw_mgr.cmd_work);
-	if (!task)
-		return -ENOMEM;
 
 	packet_size =
 		sizeof(struct hfi_cmd_ipebps_async) +
@@ -2370,13 +2373,7 @@ static int cam_icp_mgr_destroy_handle(
 	memcpy(destroy_cmd->payload.direct, &ctx_data->temp_payload,
 		sizeof(uint64_t));
 
-	task_data = (struct hfi_cmd_work_data *)task->payload;
-	task_data->data = (void *)destroy_cmd;
-	task_data->request_id = 0;
-	task_data->type = ICP_WORKQ_TASK_CMD_TYPE;
-	task->process_cb = cam_icp_mgr_process_cmd;
-	rc = cam_req_mgr_workq_enqueue_task(task, &icp_hw_mgr,
-		CRM_TASK_PRIORITY_0);
+	rc = hfi_write_cmd(destroy_cmd);
 	if (rc) {
 		kfree(destroy_cmd);
 		return rc;
@@ -2393,12 +2390,7 @@ static int cam_icp_mgr_destroy_handle(
 			HFI_DEBUG_MODE_QUEUE)
 			cam_icp_mgr_process_dbg_buf();
 	}
-	else{
-		//workq won't do free,if no timeout means
-		//cmd execution finished,so just release it.
-		kfree(destroy_cmd);
-	}
-
+	kfree(destroy_cmd);
 	return rc;
 }
 
@@ -3886,6 +3878,8 @@ static int cam_icp_mgr_acquire_hw(void *hw_mgr_priv, void *acquire_hw_args)
 		if (icp_hw_mgr.a5_debug_type)
 			hfi_set_debug_level(icp_hw_mgr.a5_debug_type,
 				icp_hw_mgr.a5_dbg_lvl);
+
+		hfi_set_fw_dump_level(icp_hw_mgr.a5_fw_dump_lvl);
 
 		rc = cam_icp_send_ubwc_cfg(hw_mgr);
 		if (rc)
