@@ -1123,7 +1123,7 @@ u32 cfg80211_calculate_bitrate(struct rate_info *rate)
 		return cfg80211_calculate_bitrate_vht(rate);
 
 	/* the formula below does only work for MCS values smaller than 32 */
-	if (WARN_ON_ONCE(rate->mcs >= 32))
+	if (rate->mcs >= 32)
 		return 0;
 
 	modulation = rate->mcs & 7;
