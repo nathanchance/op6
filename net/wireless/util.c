@@ -1020,7 +1020,7 @@ static u32 cfg80211_calculate_bitrate_60g(struct rate_info *rate)
 		[31] = 25030,
 	};
 
-	if (WARN_ON_ONCE(rate->mcs >= ARRAY_SIZE(__mcs2bitrate)))
+	if (rate->mcs >= ARRAY_SIZE(__mcs2bitrate))
 		return 0;
 
 	return __mcs2bitrate[rate->mcs];
@@ -1078,7 +1078,7 @@ static u32 cfg80211_calculate_bitrate_vht(struct rate_info *rate)
 	u32 bitrate;
 	int idx;
 
-	if (WARN_ON_ONCE(rate->mcs > 9))
+	if (rate->mcs > 9)
 		return 0;
 
 	switch (rate->bw) {
@@ -1094,7 +1094,6 @@ static u32 cfg80211_calculate_bitrate_vht(struct rate_info *rate)
 	case RATE_INFO_BW_5:
 	case RATE_INFO_BW_10:
 	default:
-		WARN_ON(1);
 		/* fall through */
 	case RATE_INFO_BW_20:
 		idx = 0;
@@ -1123,7 +1122,7 @@ u32 cfg80211_calculate_bitrate(struct rate_info *rate)
 		return cfg80211_calculate_bitrate_vht(rate);
 
 	/* the formula below does only work for MCS values smaller than 32 */
-	if (WARN_ON_ONCE(rate->mcs >= 32))
+	if (rate->mcs >= 32)
 		return 0;
 
 	modulation = rate->mcs & 7;
