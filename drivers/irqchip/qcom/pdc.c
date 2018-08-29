@@ -16,7 +16,6 @@
 #include <linux/init.h>
 #include <linux/irq.h>
 #include <linux/irqchip.h>
-
 #include <linux/interrupt.h>
 #include <linux/irqdomain.h>
 #include <linux/io.h>
@@ -97,18 +96,17 @@ static inline int pdc_enable_intr(struct irq_data *d, bool on)
 	return 0;
 }
 
-
 static int qcom_pdc_gic_get_irqchip_state(struct irq_data *d,
 		enum irqchip_irq_state which, bool *state)
 {
-	return d->parent_data->chip->irq_get_irqchip_state(d,
+	return d->parent_data->chip->irq_get_irqchip_state(d->parent_data,
 		which, state);
 }
 
 static int qcom_pdc_gic_set_irqchip_state(struct irq_data *d,
 		enum irqchip_irq_state which, bool value)
 {
-	return d->parent_data->chip->irq_set_irqchip_state(d,
+	return d->parent_data->chip->irq_set_irqchip_state(d->parent_data,
 		which, value);
 }
 
@@ -237,7 +235,6 @@ static struct irq_chip qcom_pdc_gic_chip = {
 #ifdef CONFIG_SMP
 	.irq_set_affinity	= irq_chip_set_affinity_parent,
 #endif
-
 	.irq_get_irqchip_state	= qcom_pdc_gic_get_irqchip_state,
 	.irq_set_irqchip_state	= qcom_pdc_gic_set_irqchip_state,
 };
