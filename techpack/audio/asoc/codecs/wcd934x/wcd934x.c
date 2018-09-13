@@ -8919,6 +8919,8 @@ static struct snd_soc_dai_driver tavil_i2s_dai[] = {
 
 static void tavil_codec_power_gate_digital_core(struct tavil_priv *tavil)
 {
+	if (!tavil)
+		return;
 	mutex_lock(&tavil->power_lock);
 	dev_dbg(tavil->dev, "%s: Entering power gating function, %d\n",
 		__func__, tavil->power_active_ref);
@@ -11236,6 +11238,7 @@ static struct platform_driver tavil_codec_driver = {
 #ifdef CONFIG_PM
 		.pm = &tavil_pm_ops,
 #endif
+		.suppress_bind_attrs = true,
 	},
 };
 
