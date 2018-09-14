@@ -3107,8 +3107,8 @@ static int cam_alloc_smmu_context_banks(struct device *dev)
 	}
 
 	/* allocate memory for the context banks */
-	iommu_cb_set.cb_info = devm_kcalloc(dev,
-		iommu_cb_set.cb_num, sizeof(struct cam_context_bank_info),
+	iommu_cb_set.cb_info = devm_kzalloc(dev,
+		iommu_cb_set.cb_num * sizeof(struct cam_context_bank_info),
 		GFP_KERNEL);
 
 	if (!iommu_cb_set.cb_info) {
@@ -3343,6 +3343,7 @@ static int cam_smmu_probe(struct platform_device *pdev)
 		rc = cam_populate_smmu_context_banks(dev, CAM_ARM_SMMU);
 		if (rc < 0) {
 			CAM_ERR(CAM_SMMU, "Error: populating context banks");
+			cam_smmu_release_cb(pdev);
 			return -ENOMEM;
 		}
 		return rc;
@@ -3393,6 +3394,7 @@ static struct platform_driver cam_smmu_driver = {
 		.name = "msm_cam_smmu",
 		.owner = THIS_MODULE,
 		.of_match_table = msm_cam_smmu_dt_match,
+		.suppress_bind_attrs = true,
 	},
 };
 
