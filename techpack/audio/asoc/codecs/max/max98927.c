@@ -1510,6 +1510,7 @@ static int max98927_spk_gain_put(struct snd_kcontrol *kcontrol,
 	}
 	return 0;
 }
+
 #ifdef CONFIG_SOUND_CONTROL
 struct snd_soc_codec *max98927_codec;
 int sound_control_speaker_gain(int gain)
