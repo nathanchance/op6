@@ -4076,9 +4076,9 @@ int tp_single_tap_en(struct synaptics_ts_data *ts, bool enable)
 		ret = synaptics_rmi4_i2c_write_byte(ts->client,
 			0x22, 0x01);
 		ret = synaptics_rmi4_i2c_write_byte(ts->client,
-			0x23, 0x32);
+			0x23, 0x1e);
 		ret = synaptics_rmi4_i2c_write_byte(ts->client,
-			0x24, 0x32);
+			0x24, 0x1e);
 		ret = synaptics_rmi4_i2c_write_byte(ts->client,
 			0x25, 0x32);
 		ret = i2c_smbus_write_word_data(ts->client,
@@ -6385,7 +6385,6 @@ static int synaptics_ts_suspend(struct device *dev)
 			TPD_ERR("enter gesture mode\n");
 		}
 		set_doze_time(2);
-		//just for fajita
 		if (ts->project_version == 0x03) {
 			mutex_lock(&ts->mutex);
 			tp_single_tap_en(ts, true);
@@ -6645,6 +6644,12 @@ static int msm_drm_notifier_callback(
 				TPD_DEBUG("%s:TP suspend end\n", __func__);
 			}
 		}
+		if (ts->project_version == 0x03)
+			if (*blank == MSM_DRM_BLANK_POWERDOWN &&
+				event == MSM_DRM_EVENT_BLANK &&
+				ts->fp_aod_cnt > 0) {
+					set_tp_info(ts, 0);
+				}
 	}
 	return 0;
 

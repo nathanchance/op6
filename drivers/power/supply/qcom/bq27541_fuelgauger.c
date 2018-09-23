@@ -1389,6 +1389,7 @@ static void update_pre_capacity_func(struct work_struct *w)
 {
 	pr_info("enter\n");
 	bq27541_set_allow_reading(true);
+	bq27541_get_battery_temperature();
 	bq27541_battery_soc(bq27541_di, update_pre_capacity_data.suspend_time);
 	bq27541_set_allow_reading(false);
 	__pm_relax(&bq27541_di->update_soc_wake_lock);

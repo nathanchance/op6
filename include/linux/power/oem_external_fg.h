@@ -118,4 +118,5 @@ extern void op_bus_vote(int disable);
 extern bool dash_adapter_update_is_tx_gpio(unsigned int  gpio_num);
 extern bool dash_adapter_update_is_rx_gpio(unsigned  int gpio_num);
 extern int is_hw_support_n76e(void);
+extern bool audio_adapter_flag;
 #endif

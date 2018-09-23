@@ -155,7 +155,7 @@ static int adjust_minadj(short *min_score_adj)
 	return ret;
 }
 
-static int batch_kill = 1;
+static int batch_kill;
 module_param(batch_kill, int, 0644);
 MODULE_PARM_DESC(batch_kill, "lowmemorykiller kill more strategy");
 
@@ -471,7 +471,7 @@ static void mark_lmk_victim(struct task_struct *tsk)
 static bool selftest_running = false;
 static int selftest_min_score_adj = 906;
 
-static int quick_select = 1;
+static int quick_select;
 module_param(quick_select, int, 0644);
 MODULE_PARM_DESC(quick_select, "lowmemorykiller quick select task from adj chain");
 
@@ -1255,6 +1255,18 @@ quick_select_fast:
 
 	if (selected) {
 		long cache_size = other_file * (long)(PAGE_SIZE / 1024);
+		long uidlru_cache = uid_lru_total * (long)(PAGE_SIZE / 1024);
+		long anon_size = global_node_page_state(NR_ANON_MAPPED)
+					* (long)(PAGE_SIZE / 1024);
+		long slab_size = (global_page_state(NR_SLAB_RECLAIMABLE) +
+		    global_page_state(NR_SLAB_UNRECLAIMABLE))
+		    * (long)(PAGE_SIZE / 1024);
+		long unevictable_size =
+			global_node_page_state(NR_LRU_BASE + LRU_UNEVICTABLE)
+			* (long)(PAGE_SIZE / 1024);
+		long sreclaimable_size =
+			global_page_state(NR_SLAB_RECLAIMABLE)
+			* (long)(PAGE_SIZE / 1024);
 		long cache_limit = minfree * (long)(PAGE_SIZE / 1024);
 		long free = other_free * (long)(PAGE_SIZE / 1024);
 
@@ -1283,6 +1295,11 @@ quick_select_fast:
 		lowmem_print(1, "Killing '%s' (%d) (tgid %d), adj %hd,\n"
 			"to free %ldkB on behalf of '%s' (%d) because\n"
 			"cache %ldkB is below limit %ldkB for oom score %hd\n"
+			"ramboost cache %ldkB\n"
+			"anon %ldkB\n"
+			"unevictable %ldkB\n"
+			"slab %ldkB\n"
+			"SReclaimable %ldkB\n"
 			"Free memory is %ldkB above reserved.\n"
 			"Free CMA is %ldkB\n"
 			"Total reserve is %ldkB\n"
@@ -1297,6 +1314,11 @@ quick_select_fast:
 			current->comm, current->pid,
 			cache_size, cache_limit,
 			min_score_adj,
+			uidlru_cache,
+			anon_size,
+			unevictable_size,
+			slab_size,
+			sreclaimable_size,
 			free,
 			global_page_state(NR_FREE_CMA_PAGES) *
 			(long)(PAGE_SIZE / 1024),
@@ -1310,8 +1332,16 @@ quick_select_fast:
 			total_swapcache_pages() *
 			(long)(PAGE_SIZE / 1024),
 			sc->gfp_mask);
-
-		if (lowmem_debug_level >= 2 && selected_oom_score_adj == 0) {
+			for_each_process(tsk) {
+				int anno_size;
+				if (tsk->group_leader && tsk->group_leader->mm)
+					anno_size = get_mm_counter(tsk->group_leader->mm, MM_ANONPAGES);
+				else
+					continue;
+				if (anno_size > 256 && tsk->signal)
+					lowmem_print(1, "%s anno_size  %d adj %d\n", tsk->group_leader->comm, anno_size, tsk->signal->oom_score_adj);
+			}
+		if (lowmem_debug_level >= 0 && selected_oom_score_adj == 0) {
 			show_mem(SHOW_MEM_FILTER_NODES);
 			show_mem_call_notifiers();
 			dump_tasks(NULL, NULL);

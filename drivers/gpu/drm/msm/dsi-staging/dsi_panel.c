@@ -24,6 +24,7 @@
 #include "dsi_ctrl_hw.h"
 #include <linux/project_info.h>
 #include <linux/pm_wakeup.h>
+#include "../sde/sde_trace.h"
 /**
  * topology is currently defined by a set of following 3 values:
  * 1. num of layer mixers
@@ -3910,26 +3911,6 @@ int dsi_panel_enable(struct dsi_panel *panel)
 	}
 	panel->panel_initialized = true;
 	mutex_unlock(&panel->panel_lock);
-    if (panel->acl_mode)
-        dsi_panel_set_acl_mode(panel, panel->acl_mode);
-
-    if (panel->srgb_mode)
-        dsi_panel_set_srgb_mode(panel, panel->srgb_mode);
-
-    if (panel->dci_p3_mode)
-        dsi_panel_set_dci_p3_mode(panel, panel->dci_p3_mode);
-
-    if (panel->night_mode)
-        dsi_panel_set_night_mode(panel, panel->night_mode);
-
-    if (panel->oneplus_mode)
-        dsi_panel_set_oneplus_mode(panel, panel->oneplus_mode);
-
-    if (panel->adaption_mode)
-        dsi_panel_set_adaption_mode(panel, panel->adaption_mode);
-
-    if (panel->hbm_mode)
-        dsi_panel_set_hbm_mode(panel, panel->hbm_mode);
 	pr_err("end\n");
 	/* remove print actvie ws */
 	pm_print_active_wakeup_sources_queue(false);
@@ -4001,7 +3982,6 @@ int dsi_panel_disable(struct dsi_panel *panel)
 
 	pr_err("start\n");
 	mutex_lock(&panel->panel_lock);
-
 	/* Avoid sending panel off commands when ESD recovery is underway */
 	if (!atomic_read(&panel->esd_recovery_pending)) {
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_OFF);
@@ -4138,7 +4118,8 @@ int dsi_panel_set_hbm_mode(struct dsi_panel *panel, int level)
         if (!count) {
             pr_err("This panel does not support HBM mode off.\n");
             goto error;
-        } else {
+        } else
+        {	
             rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_HBM_OFF);
 			printk(KERN_ERR"When HBM OFF -->hbm_backight = %d panel->bl_config.bl_level =%d\n",panel->hbm_backlight,panel->bl_config.bl_level);
 			rc= dsi_panel_update_backlight(panel,panel->hbm_backlight);
@@ -4218,10 +4199,8 @@ int dsi_panel_set_hbm_mode(struct dsi_panel *panel, int level)
     break;
 
     }
-    pr_err("Set HBM Mode = %d\n", level);
 	if(level==5)
 	{
-		pr_err("HBM == 5 for fingerprint\n");
 	}
 
 error:
@@ -4453,7 +4432,6 @@ int dsi_panel_set_aod_mode(struct dsi_panel *panel, int level)
 	int rc = 0;
 	u32 count;
     struct dsi_display_mode *mode;
-
 	if (!panel || !panel->cur_mode) {
 		pr_err("Invalid params\n");
 		return -EINVAL;
@@ -4463,7 +4441,7 @@ int dsi_panel_set_aod_mode(struct dsi_panel *panel, int level)
     }
 	mutex_lock(&panel->panel_lock);
 	if (panel->aod_curr_mode == level) {
-        goto error;
+       goto error;
 	}
     mode = panel->cur_mode;
     if (level == 1) {
@@ -4554,3 +4532,4 @@ error:
 
 	return rc;
 }
+
